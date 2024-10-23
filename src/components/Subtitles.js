@@ -49,21 +49,24 @@ const Style = styled.div`
 `;
 
 export default function Subtitles({ currentIndex, subtitle, checkSub, player, updateSub }) {
+    // height初始化为100
     const [height, setHeight] = useState(100);
-
+    // resize：一个回调函数，用于更新height状态变量。它根据页面的高度进行计算并设置新的高度值。
+    // 使用useCallback确保resize函数在依赖项不变的情况下不会被重新创建，提高性能。
     const resize = useCallback(() => {
         setHeight(document.body.clientHeight - 170);
     }, [setHeight]);
-
+    // 监听函数，若窗口发生变化，则会使用debounce进行防抖处理
     useEffect(() => {
         resize();
         if (!resize.init) {
             resize.init = true;
+            // 延迟500毫秒再调用resize的新高度
             const debounceResize = debounce(resize, 500);
             window.addEventListener('resize', debounceResize);
         }
     }, [resize]);
-
+    // 组件返回值，返回一个Style组件
     return (
         <Style className="subtitles">
             <Table
@@ -81,6 +84,7 @@ export default function Subtitles({ currentIndex, subtitle, checkSub, player, up
                             key={props.key}
                             className={props.className}
                             style={props.style}
+                            // 点击的时候处理暂停和播放的逻辑
                             onClick={() => {
                                 if (player) {
                                     player.pause();

@@ -14,10 +14,14 @@ function matrixCallback(callback) {
     return result;
 }
 
+// 获取画面颜色
 function getColors($canvas, $video, width, height) {
+    // 获取canvas上下文
     const ctx = $canvas.getContext('2d');
+    // canvas画布的宽度高度
     $canvas.width = width;
     $canvas.height = height;
+    // 将视频元素画上去
     ctx.drawImage($video, 0, 0);
     return matrixCallback((xIndex, yIndex, x, y) => {
         const itemW = width / x;
@@ -41,6 +45,7 @@ function getColors($canvas, $video, width, height) {
     });
 }
 
+// 创建一个由div元素组成的矩阵
 function creatMatrix(parent) {
     return matrixCallback((xIndex, yIndex, x, y) => {
         const $box = document.createElement('div');
@@ -74,7 +79,9 @@ function setStyles(element, styles) {
     return element;
 }
 
+// 创建一个背光效果，播放视频的时候，视频背后周围的阴影部分，可有可无~
 export default function backlight($player, $video) {
+    // 创建一个div
     const $backlight = document.createElement('div');
     $backlight.classList.add('backlight');
     setStyles($backlight, {
@@ -84,12 +91,16 @@ export default function backlight($player, $video) {
         top: 0,
         right: 0,
         bottom: 0,
-        width: '100%',
-        height: '100%',
+        // width: '100%',
+        // height: '100%',
+        width: '0%',
+        height: '0%',
     });
 
     const matrix = creatMatrix($backlight);
+    // 创建一个新的canvas元素
     const $canvas = document.createElement('canvas');
+    // 将这个背光元素放到视频上面
     $player.insertBefore($backlight, $video);
 
     function run() {
@@ -103,11 +114,14 @@ export default function backlight($player, $video) {
         });
     }
 
+
+    // 当时视频播放位置发生变化，调用run函数
     $video.addEventListener('seeked', run);
+    // 视频元数据（时长、尺寸等...）加载完成之后延迟调用（确保元数据加载完成之后有足够时间进行初始化操作）
     $video.addEventListener('loadedmetadata', () => setTimeout(run, 1000));
 
-    (function loop() {
-        window.requestAnimationFrame(() => {
+    (function loop() { // 立即执行
+        window.requestAnimationFrame(() => { // 
             if (isPlaying($video)) {
                 run();
             }

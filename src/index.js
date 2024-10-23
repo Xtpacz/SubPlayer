@@ -15,6 +15,7 @@ const language = navigator.language.toLowerCase();
 const defaultLang = i18n[language] ? language : 'en';
 setLocale(defaultLang);
 
+// 挂载组件
 ReactDOM.render(
     <React.Fragment>
         <GlobalStyle />

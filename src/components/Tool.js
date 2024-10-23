@@ -298,7 +298,10 @@ export default function Header({
     const burnSubtitles = useCallback(async () => {
         try {
             const { createFFmpeg, fetchFile } = FFmpeg;
-            const ffmpeg = createFFmpeg({ log: true });
+            const ffmpeg = createFFmpeg({
+                corePath: 'https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js',
+                log: true,
+            });
             ffmpeg.setProgress(({ ratio }) => setProcessing(ratio * 100));
             setLoading(t('LOADING_FFMPEG'));
             await ffmpeg.load();
@@ -359,14 +362,20 @@ export default function Header({
 
     const onVideoChange = useCallback(
         (event) => {
+            // 获取用户选择的文件
             const file = event.target.files[0];
             if (file) {
+                // 文件拓展名
                 const ext = getExt(file.name);
                 const canPlayType = player.canPlayType(file.type);
                 if (canPlayType === 'maybe' || canPlayType === 'probably') {
+                    // 设置视频文件状态
                     setVideoFile(file);
+                    // 解码音频数据
                     decodeAudioData(file);
+                    // 创建一个指向文件内容的URL
                     const url = URL.createObjectURL(new Blob([file]));
+                    console.log("new video url = ", url)
                     waveform.decoder.destroy();
                     waveform.drawer.update();
                     waveform.seek(0);
@@ -540,12 +549,17 @@ export default function Header({
                     </span>
                 </div>
             </div>
-            <div className="bottom">
+            <div className="export">
+                <div className="btn" onClick={() => alert('test')}>
+                   向上调整字幕
+                </div>
+            </div>
+            {/* <div className="bottom">
                 <a href="https://online.aimu-app.com/">
                     <div className="title">全新字幕编辑器来了，点击这里体验</div>
                     <img src="/aimu.png" alt="aimu" />
                 </a>
-            </div>
+            </div> */}
         </Style>
     );
 }

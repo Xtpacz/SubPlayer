@@ -10,8 +10,11 @@ export function url2sub(url) {
         const $track = document.createElement('track');
         $track.default = true;
         $track.kind = 'metadata';
+        // 将字幕轨道添加到视频元素中
         $video.appendChild($track);
+        // 字幕轨道加载完成，执行这个回调函数
         $track.onload = () => {
+            // 调用resolve来兑现Promise
             resolve(
                 Array.from($track.track.cues).map((item) => {
                     const start = DT.d2t(item.startTime);
@@ -21,6 +24,7 @@ export function url2sub(url) {
                 }),
             );
         };
+        // 设置字幕轨道的源为传入的URL参数，开始加载字幕
         $track.src = url;
     });
 }
@@ -88,6 +92,7 @@ export function sub2vtt(sub) {
         'WEBVTT\n\n' +
         sub
             .map((item, index) => {
+                // todo 这里之后要加上line和position来表示位置，至于颜色？
                 return index + 1 + '\n' + item.start + ' --> ' + item.end + '\n' + item.text;
             })
             .join('\n\n')

@@ -63,7 +63,9 @@ export default function App({ defaultLang }) {
         },
         [newSub],
     );
-
+    
+    // useCallback的作用是返回一个记忆化的回调函数，只有在其依赖项发生变化时才会重新创建这个函数。
+    // 可以避免不必要的重新计算和组件重新渲染
     const copySubs = useCallback(() => formatSub(subtitle), [subtitle, formatSub]);
 
     const setSubtitle = useCallback(
@@ -82,6 +84,7 @@ export default function App({ defaultLang }) {
         [subtitle, setSubtitleOriginal, formatSub],
     );
 
+    // 撤销操作
     const undoSubs = useCallback(() => {
         const subs = subtitleHistory.current.pop();
         if (subs) {
@@ -155,6 +158,7 @@ export default function App({ defaultLang }) {
         [hasSub, copySubs, setSubtitle, formatSub],
     );
 
+    // 合并两个字幕块
     const mergeSub = useCallback(
         (sub) => {
             const index = hasSub(sub);
@@ -162,30 +166,40 @@ export default function App({ defaultLang }) {
             const subs = copySubs();
             const next = subs[index + 1];
             if (!next) return;
+            // todo 之后合并了，样式怎么选择？前后字幕的样式，取决于谁
             const merge = newSub({
                 start: sub.start,
                 end: next.end,
                 text: sub.text.trim() + '\n' + next.text.trim(),
             });
             subs[index] = merge;
+            // 删除索引为index+1的元素
             subs.splice(index + 1, 1);
+            // 将合并后的字幕数组更新到字幕状态管理中
             setSubtitle(subs);
         },
         [hasSub, copySubs, setSubtitle, newSub],
     );
 
+    // 一个字幕块被分割成两个
     const splitSub = useCallback(
         (sub, start) => {
             const index = hasSub(sub);
+            // 判空处理
             if (index < 0 || !sub.text || !start) return;
             const subs = copySubs();
             const text1 = sub.text.slice(0, start).trim();
             const text2 = sub.text.slice(start).trim();
+            // 分割后某一块为空，同样进行直接返回，不分割
             if (!text1 || !text2) return;
+            // 分割后持续时间小于0.2秒，直接返回，不分割
             const splitDuration = (sub.duration * (start / sub.text.length)).toFixed(3);
             if (splitDuration < 0.2 || sub.duration - splitDuration < 0.2) return;
+            // 删除原来的
             subs.splice(index, 1);
+            // 转换成类似于00:00:05.123的形式
             const middleTime = DT.d2t(sub.startTime + parseFloat(splitDuration));
+            // 将分开的两个新的字幕块加入
             subs.splice(
                 index,
                 0,
@@ -204,15 +218,18 @@ export default function App({ defaultLang }) {
                     text: text2,
                 }),
             );
+            // 设置整体字幕变量为新的subs
             setSubtitle(subs);
         },
         [hasSub, copySubs, setSubtitle, newSub],
     );
 
+    // 按键对应事件：空格暂停播放，Ctrl+Z 撤回操作
     const onKeyDown = useCallback(
         (event) => {
             const keyCode = getKeyCode(event);
             switch (keyCode) {
+                // 空格键，暂停操作
                 case 32:
                     event.preventDefault();
                     if (player) {
@@ -223,6 +240,7 @@ export default function App({ defaultLang }) {
                         }
                     }
                     break;
+                // Ctrl+Z 撤回操作
                 case 90:
                     event.preventDefault();
                     if (event.metaKey) {
@@ -236,17 +254,21 @@ export default function App({ defaultLang }) {
         [player, playing, undoSubs],
     );
 
+    // 监听按键
     useEffect(() => {
         window.addEventListener('keydown', onKeyDown);
         return () => window.removeEventListener('keydown', onKeyDown);
     }, [onKeyDown]);
 
+    // 记录播放到第几个字幕了
     useMemo(() => {
         const currentIndex = subtitle.findIndex((item) => item.startTime <= currentTime && item.endTime > currentTime);
         setCurrentIndex(currentIndex);
     }, [currentTime, subtitle]);
 
+    // 设置subtitle
     useEffect(() => {
+        // 从浏览器缓存中获取subtitle
         const localSubtitleString = window.localStorage.getItem('subtitle');
         const fetchSubtitle = () =>
             fetch('/sample.json')
@@ -254,16 +276,19 @@ export default function App({ defaultLang }) {
                 .then((res) => {
                     setSubtitleOriginal(res.map((item) => new Sub(item)));
                 });
-
+        // 本地缓存有数据
         if (localSubtitleString) {
             try {
                 const localSubtitle = JSON.parse(localSubtitleString);
                 if (localSubtitle.length) {
+                    // 优先设置为本地缓存的数据
                     setSubtitleOriginal(localSubtitle.map((item) => new Sub(item)));
                 } else {
+                    // 否则再是示例数据
                     fetchSubtitle();
                 }
             } catch (error) {
+                // 解析数据出错，同样设置为示例数据
                 fetchSubtitle();
             }
         } else {
@@ -308,6 +333,7 @@ export default function App({ defaultLang }) {
     return (
         <Style>
             <div className="main">
+                {/* {...props}表示将props对象传递给组件 */}
                 <Player {...props} />
                 <Subtitles {...props} />
                 <Tool {...props} />

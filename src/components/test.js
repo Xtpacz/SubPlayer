@@ -11,59 +11,44 @@ const Style = styled.div`
     justify-content: center;
     height: 100%;
     width: 100%;
-    padding: 1% 1%;
+    padding: 20% 10%;
 
-    .video {
+   .video {
         display: flex;
         align-items: center;
         justify-content: center;
-        // height: auto;
-        // width: auto;
-        height: 100%;
-        width: 100%;
+        height: auto;
+        width: auto;
         position: relative;
 
-        // video {
-        //     position: relative;
-        //     z-index: 10;
-        //     outline: none;
-        //     max-height: 100%;
-        //     max-width: 100%;
-        //     box-shadow: 0px 5px 25px 5px rgb(0 0 0 / 80%);
-        //     background-color: #000;
-        //     cursor: pointer;
-        // }
-
         video {
-            position: absolute; /* 绝对定位，使其能够覆盖整个父div */
-            top: 50%; /* 初始位置在垂直方向上居中 */
-            left: 50%; /* 初始位置在水平方向上居中 */
-            transform: translate(-50%, -50%); /* 通过transform调整，确保视频的中心与父div的中心对齐 */
-            width: 100%; /* 宽度自适应，以保持视频比例 */
-            height: 100%; /* 高度自适应，以保持视频比例 */
+            position: relative;
             z-index: 10;
             outline: none;
-            box-shadow: 0px 5px 25px 5px rgba(0, 0, 0, 0.8);
+            max-height: 100%;
+            max-width: 100%;
+            box-shadow: 0px 5px 25px 5px rgb(0 0 0 / 80%);
             background-color: #000;
             cursor: pointer;
         }
 
-        .subtitle {
+       .subtitle {
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             position: absolute;
             z-index: 20;
+            // 默认位置为底部居中
             left: 0;
             right: 0;
-            bottom: 50%;
+            bottom: 5%;
             width: 100%;
             padding: 0 20px;
             user-select: none;
             pointer-events: none;
 
-            .operate {
+           .operate {
                 padding: 5px 15px;
                 color: #fff;
                 font-size: 13px;
@@ -75,7 +60,7 @@ const Style = styled.div`
                 pointer-events: all;
             }
 
-            .textarea {
+           .textarea {
                 width: 100%;
                 outline: none;
                 resize: none;
@@ -83,7 +68,7 @@ const Style = styled.div`
                 line-height: 1.2;
                 border: none;
                 color: #fff;
-                font-size: 2vw;
+                font-size: 20px;
                 padding: 5px 10px;
                 user-select: all;
                 pointer-events: all;
@@ -99,11 +84,10 @@ const Style = styled.div`
     }
 `;
 
-// memo通过记忆组件的渲染结果来避免重复渲染
 const VideoWrap = memo(
     ({ setPlayer, setCurrentTime, setPlaying }) => {
         const $video = createRef();
-        // useEffect相当于定义函数了
+
         useEffect(() => {
             setPlayer($video.current);
             (function loop() {
@@ -136,14 +120,15 @@ export default function Player(props) {
     const [currentSub, setCurrentSub] = useState(null);
     const [focusing, setFocusing] = useState(false);
     const [inputItemCursor, setInputItemCursor] = useState(0);
+    const [subtitlePosition, setSubtitlePosition] = useState('bottomCenter'); // 添加状态来控制字幕位置
     const $player = createRef();
 
     useEffect(() => {
-        if ($player.current && props.player && !backlight.state) {
+        if ($player.current && props.player &&!backlight.state) {
             backlight.state = true;
             backlight($player.current, props.player);
         }
-    }, [$player, props.player]);  // 依赖项数组 只有当$player 或者 props.player发生变化后，才会执行这个副作用函数
+    }, [$player, props.player]);
 
     useMemo(() => {
         setCurrentSub(props.subtitle[props.currentIndex]);
@@ -185,24 +170,31 @@ export default function Player(props) {
         props.splitSub(currentSub, inputItemCursor);
     }, [props, currentSub, inputItemCursor]);
 
+    const handlePositionChange = (newPosition) => {
+        setSubtitlePosition(newPosition);
+    };
+
     return (
         <Style className="player">
             <div className="video" ref={$player}>
                 <VideoWrap {...props} />
-                {props.player && currentSub ? (
-                    <div className="subtitle">
-                        {focusing ? (
+                {props.player && currentSub? (
+                    <div className="subtitle" style={{
+                        // 根据状态设置不同的位置
+                       ...(subtitlePosition === 'topLeft' && { top: 0, left: 0 }),
+                       ...(subtitlePosition === 'topCenter' && { top: 0, left: '50%', transform: 'translateX(-50%)' }),
+                       ...(subtitlePosition === 'topRight' && { top: 0, right: 0 }),
+                       ...(subtitlePosition === 'bottomLeft' && { bottom: 5%, left: 0 }),
+                       ...(subtitlePosition === 'bottomCenter' && { bottom: 5%, left: '50%', transform: 'translateX(-50%)' }),
+                       ...(subtitlePosition === 'bottomRight' && { bottom: 5%, right: 0 }),
+                    }}>
+                        {focusing? (
                             <div className="operate" onClick={onSplit}>
                                 <Translate value="SPLIT" />
                             </div>
                         ) : null}
                         <TextareaAutosize
-                            className={`textarea ${!props.playing ? 'pause' : ''}`}
-                            // 这里动态修改字幕样式？
-                            // style={{
-                            //     left: render.padding * gridGap + (drogStartTime - render.beginTime) * gridGap * 10,
-                            //     width: (drogEndTime - drogStartTime) * gridGap * 10,
-                            // }}
+                            className={`textarea ${!props.playing? 'pause' : ''}`}
                             value={currentSub.text}
                             onChange={onChange}
                             onClick={onClick}
